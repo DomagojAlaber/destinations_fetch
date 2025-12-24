@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -91,5 +93,27 @@ func main() {
 	for _, b := range r.Results.Bindings {
 		fmt.Printf("%s -> %s\n", b.ItemLabel.Value, b.Coord.Value)
 	}
+}
 
+func parseWTKPoint(s string) (lon, lat float64, err error) {
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, "Point(")
+	s = strings.TrimSuffix(s, ")")
+
+	parts := strings.Fields(s)
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("unexpected WKT point: %q", s)
+	}
+
+	lon, err = strconv.ParseFloat(parts[0], 64)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	lat, err = strconv.ParseFloat(parts[1], 64)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return lon, lat, err
 }
