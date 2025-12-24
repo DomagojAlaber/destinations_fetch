@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,7 +24,26 @@ SELECT ?item ?itemLabel ?type ?typeLabel ?coord WHERE {
 ORDER BY ?typeLabel ?itemLabel
 `
 
+type WikiDataResponse struct {
+	Results struct {
+		Bindings []struct {
+			ItemLabel struct {
+				Value string `json:"value"`
+			} `json:"itemLabel"`
+			Coord struct {
+				Value string `json:"value"`
+			} `json:"coord"`
+		} `json:"bindings"`
+	} `json:"results"`
+}
+
+type Place struct {
+	Name  string
+	Coord string
+}
+
 func main() {
+	var r WikiDataResponse
 
 	u, err := url.Parse(endpoint)
 	if err != nil {
@@ -42,7 +63,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, "new request:", err)
 		os.Exit(1)
 	}
-	// Wikidata recommends identifying your client; some endpoints may throttle anonymous clients.
 	req.Header.Set("User-Agent", "destionations_fetch/1.0 (contact: you@example.com)")
 
 	resp, err := client.Do(req)
@@ -64,5 +84,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(string(body))
+	if err := json.Unmarshal(body, &r); err != nil {
+		log.Fatal(err)
+	}
+
+	for _, b := range r.Results.Bindings {
+		fmt.Printf("%s -> %s\n", b.ItemLabel.Value, b.Coord.Value)
+	}
+
 }
