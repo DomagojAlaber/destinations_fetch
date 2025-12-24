@@ -98,7 +98,11 @@ func main() {
 		})
 	}
 	for _, b := range places {
-		fmt.Printf("%s -> %s\n", b.Name, b.Coord)
+		lon, lat, err := parseWTKPoint(b.Coord)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s -> lon=%f lat=%f\n", b.Name, lon, lat)
 	}
 }
 
