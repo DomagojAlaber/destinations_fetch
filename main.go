@@ -90,8 +90,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	places := make([]Place, 0, len(r.Results.Bindings))
 	for _, b := range r.Results.Bindings {
-		fmt.Printf("%s -> %s\n", b.ItemLabel.Value, b.Coord.Value)
+		places = append(places, Place{
+			Name:  b.ItemLabel.Value,
+			Coord: b.Coord.Value,
+		})
+	}
+	for _, b := range places {
+		fmt.Printf("%s -> %s\n", b.Name, b.Coord)
 	}
 }
 
