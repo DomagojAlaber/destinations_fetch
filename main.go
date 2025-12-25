@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/DomagojAlaber/destinations_fetch/internal/db"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const endpoint = "https://query.wikidata.org/sparql"
@@ -97,11 +102,28 @@ func main() {
 			Coord: b.Coord.Value,
 		})
 	}
+
+	ctx := context.Background()
+
+	conn, err := pgx.Connect(ctx, "")
+	if err != nil {
+		fmt.Print(err)
+	}
+	defer conn.Close(ctx)
+
+	queries := db.New(conn)
+
 	for _, b := range places {
 		lon, lat, err := parseWTKPoint(b.Coord)
 		if err != nil {
 			log.Fatal(err)
 		}
+		queries.UpsertDestination(ctx, db.UpsertDestinationParams{
+			Name:   pgtype.Text{String: b.Name},
+			Region: pgtype.Text{String: "Istria"},
+			Lon:    pgtype.Float8{Float64: lon},
+			Lat:    pgtype.Float8{Float64: lat},
+		})
 		fmt.Printf("%s -> lon=%f lat=%f\n", b.Name, lon, lat)
 	}
 }
