@@ -111,6 +111,9 @@ func main() {
 	ctx := context.Background()
 
 	connString := os.Getenv("DATABASE_URL")
+	if len(connString) == 0 || connString == "" {
+		log.Fatal("Cannot load .env variable: DATABASE_URL")
+	}
 
 	conn, err := pgx.Connect(ctx, connString)
 	if err != nil {
