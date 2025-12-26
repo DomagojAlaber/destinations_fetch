@@ -16,6 +16,7 @@ import (
 	"github.com/DomagojAlaber/destinations_fetch/internal/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/joho/godotenv"
 )
 
 const endpoint = "https://query.wikidata.org/sparql"
@@ -51,6 +52,10 @@ type Place struct {
 
 func main() {
 	var r WikiDataResponse
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	u, err := url.Parse(endpoint)
 	if err != nil {
@@ -105,9 +110,11 @@ func main() {
 
 	ctx := context.Background()
 
-	conn, err := pgx.Connect(ctx, "")
+	connString := os.Getenv("DATABASE_URL")
+
+	conn, err := pgx.Connect(ctx, connString)
 	if err != nil {
-		fmt.Print(err)
+		log.Fatalf("connect: %v", err)
 	}
 	defer conn.Close(ctx)
 
@@ -118,12 +125,15 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		queries.UpsertDestination(ctx, db.UpsertDestinationParams{
-			Name:   pgtype.Text{String: b.Name},
-			Region: pgtype.Text{String: "Istria"},
-			Lon:    pgtype.Float8{Float64: lon},
-			Lat:    pgtype.Float8{Float64: lat},
+		_, err = queries.UpsertDestination(ctx, db.UpsertDestinationParams{
+			Name:   pgtype.Text{String: b.Name, Valid: true},
+			Region: pgtype.Text{String: "Istria", Valid: true},
+			Lon:    pgtype.Float8{Float64: lon, Valid: true},
+			Lat:    pgtype.Float8{Float64: lat, Valid: true},
 		})
+		if err != nil {
+			log.Fatalf("upsert %q: %v", b.Name, err)
+		}
 		fmt.Printf("%s -> lon=%f lat=%f\n", b.Name, lon, lat)
 	}
 }
